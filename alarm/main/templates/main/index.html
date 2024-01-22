@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'main/css/main.css' %}">
+    <title>ИСТБ-41, Пахтин Савелий</title>
+</head>
+<body>
+    <div class="clock">
+        <h1>
+            Будильник
+        </h1>
+        <div class="time" id="time">
+            00:00:00
+        </div>
+        <div class="input-row">
+            <div class="input-field">
+                <label for="alarmDate">
+                    Выберете дату:
+                </label>
+                <input type="date"
+                       id="alarmDate"
+                       class="alarm-input"
+                       min="">
+            </div>
+            <div class="input-field">
+                <label for="alarmTime">
+                    Выберете время:
+                </label>
+                <input type="time" id="alarmTime"
+                    class="alarm-input">
+            </div>
+            <button id="setAlarm" class="btn">
+                Установить будильник
+            </button>
+        </div>
+        <div class="input-music">
+            <form method="post" action="" enctype="multipart/form-data">
+                {{ form.file }}
+                {% csrf_token %}
+                <input type="submit" class="btn" value="Загрузить">
+            </form>
+        </div>
+        <div class="alarms" id="alarms">
+        </div>
+    </div>
+    
+    
+    <script>
+        let time = document.getElementById("time");
+        let dateInput = document.getElementById("alarmDate");
+        let tInput = document.getElementById("alarmTime");
+        let btn = document.getElementById("setAlarm");
+        let contan = document.getElementById("alarms");
+        let interVal;
+        let maxValue = 3;
+        let cnt = 0;
+        let almTimesArray = [];
+
+        function alarmSetFunction() {
+            let now = new Date();
+            let selectedDate = new Date(dateInput.value + "T" + tInput.value);
+            if (selectedDate <= now) {
+                alert(`Неверное время. Пожалуйста, выберите
+                будущую дату и время.`);
+                return;
+            }
+            if (almTimesArray.includes(selectedDate.toString())) {
+                alert(`Вы не можете установить несколько
+                будильников на одно и то же время.`);
+                return;
+            }
+            if (cnt < maxValue) {
+                let timeUntilAlarm = selectedDate - now;
+                let alarmDiv = document.createElement("div");
+                alarmDiv.classList.add("alarm");
+                alarmDiv.innerHTML = `
+                    <span>
+                    ${selectedDate.toLocaleString()}
+                    </span>
+                    <button class="delete-alarm">
+                    Delete
+                    </button>
+                `;
+                alarmDiv
+                    .querySelector(".delete-alarm")
+                    .addEventListener("click", () => {
+                        alarmDiv.remove();
+                        cnt--;
+                        clearTimeout(interVal);
+                        const idx = almTimesArray.indexOf(selectedDate.toString());
+                        if (idx !== -1) {
+                            almTimesArray.splice(idx, 1);
+                        }
+                    });
+                interVal = setTimeout(() => {
+                    // const fileInput = document.getElementById('musicFile');
+                    // const file = fileInput.files[0];
+                    const audio = new Audio("http://127.0.0.1:8000/media/{{ music.file }}");
+                    // audio.src = URL.createObjectURL(file);
+                    audio.play();
+                    Swal.fire({
+                        title: "Пора просыпаться!",
+                        willClose: () => {
+                        audio.pause();
+                        }
+                    });
+                    alarmDiv.remove();
+                    cnt--;
+                    const alarmIndex = almTimesArray.indexOf(selectedDate.toString());
+                    if (alarmIndex !== -1) {
+                        almTimesArray.splice(alarmIndex, 1);
+                    }
+                }, timeUntilAlarm);
+                contan.appendChild(alarmDiv);
+                cnt++;
+                almTimesArray.push(selectedDate.toString());
+            } else {
+                alert("Вы можете установить максимум 3 будильника.");
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'main/js/main.js' %}"></script>
+</body>
+</html>
